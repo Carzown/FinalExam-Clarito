@@ -93,7 +93,6 @@ print(os.listdir('/content/drive/My Drive/FinalExamEmergingTech2/'))
 import subprocess
 subprocess.check_call(['pip', 'install', 'streamlit'])
 
-!pip install --upgrade tensorflow
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%writefile CIFAR10DetectionSystem.py
