@@ -1,4 +1,3 @@
-tensorflow==2.x.x
 streamlit
-numpy
-opencv-python
+tensorflow
+opencv-python-headless
