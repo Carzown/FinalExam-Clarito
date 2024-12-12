@@ -15,7 +15,6 @@ Date Submitted: 12/12/24 <br>
 
 <hr>
 """
-pip install tensorflow
 
 import tensorflow as tf
 import numpy as np
