@@ -17,36 +17,31 @@ Date Submitted: 12/12/24 <br>
 """
 import streamlit as st
 import tensorflow as tf
-import numpy as np
-import cv2
 
-# Load model
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model('cifar10_model.h5')
+  model=tf.keras.models.load_model('Cifar10_Model.h5')
+  return model
+model=load_model()
+st.write("""# CIFAR10 Detection System""")
+file=st.file_uploader("Insert Image",type=["jpg","png"])
 
-model = load_model()
-class_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-
-# Prediction function
-def predict(image):
-    image = cv2.resize(image, (32, 32))
-    input_arr = np.expand_dims(image, axis=0) / 255.0
-    prediction = model.predict(input_arr)
-    class_prediction = np.argmax(prediction)
-    confidence = np.max(prediction)
-    return class_labels[class_prediction], confidence
-
-# Streamlit interface
-st.title("CIFAR-10 Image Classification")
-uploaded_file = st.file_uploader("Upload an image")
-
-if uploaded_file is not None:
-    # Convert file to an OpenCV image
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    image = cv2.imdecode(file_bytes, 1)
-    st.image(image, channels="BGR")
-    
-    # Predict class and confidence
-    class_name, confidence = predict(image)
-    st.write(f"Prediction: {class_name} (Confidence: {confidence:.2f})")
+import cv2
+from PIL import Image,ImageOps
+import numpy as np
+def import_and_predict(image_data,model):
+    size=(32,32)
+    image=ImageOps.fit(image_data,size)
+    img=np.asarray(image)
+    img_reshape=img[np.newaxis,...]
+    prediction=model.predict(img_reshape)
+    return prediction
+if file is None:
+    st.text("Please upload an image file")
+else:
+    image=Image.open(file)
+    st.image(image,use_column_width=True)
+    prediction=import_and_predict(image,model)
+    class_names=['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+    string="This Image is Classified as a: "+class_names[np.argmax(prediction)]
+    st.success(string)
