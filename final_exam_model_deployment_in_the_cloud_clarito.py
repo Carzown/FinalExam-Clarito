@@ -90,7 +90,8 @@ else:
 # List contents of the directory to verify the path
 print(os.listdir('/content/drive/My Drive/FinalExamEmergingTech2/'))
 
-!pip install streamlit
+import subprocess
+subprocess.check_call(['pip', 'install', 'streamlit'])
 
 !pip install --upgrade tensorflow
 
