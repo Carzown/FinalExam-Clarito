@@ -16,23 +16,19 @@ Date Submitted: 12/12/24 <br>
 <hr>
 """
 
-from google.colab import drive
-drive.mount('/content/drive')
-
 import tensorflow as tf
-import cv2
 import numpy as np
-from google.colab.patches import cv2_imshow
+import cv2
+import os
 from tensorflow.keras import layers, models
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.layers import Dense, Flatten
-from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
+# Load and preprocess CIFAR-10 dataset
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
 x_train, x_test = x_train / 255.0, x_test / 255.0
 
+# Define model
 model = models.Sequential([
     layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
     layers.MaxPooling2D((2, 2)),
@@ -44,20 +40,57 @@ model = models.Sequential([
     layers.Dense(10)
 ])
 
-model.compile(optimizer='adam',loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+# Compile model
+model.compile(optimizer=Adam(),
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
 
-# Train the model
+# Train model
 model.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test))
-# Save the model
-model.save('/content/drive/My Drive/FinalExamEmergingTech2/cifar10_model.h5')
 
+# Save model to local directory
+model_path = './cifar10_model.h5'
+model.save(model_path)
+print(f"Model saved at {model_path}")
+
+# Load the trained model
+model = tf.keras.models.load_model(model_path)
+class_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+
+# Prediction function
+def predict(image):
+    image = cv2.resize(image, (32, 32))
+    input_arr = np.expand_dims(image, axis=0) / 255.0
+    prediction = model.predict(input_arr)
+    class_prediction = np.argmax(prediction)
+    confidence = np.max(prediction)
+    return class_labels[class_prediction], confidence
+
+# Verify model file exists
+if os.path.exists(model_path):
+    print("Model file exists.")
+else:
+    print("Model file does not exist. Please check the path.")
+
+# Streamlit and Localtunnel setup
+try:
+    import subprocess
+    # Ensure Streamlit is installed
+    subprocess.check_call(['pip', 'install', 'streamlit'])
+    
+    # Write Streamlit app to file
+    with open("CIFAR10DetectionSystem.py", "w") as f:
+        f.write('''
+import streamlit as st
 import tensorflow as tf
 import numpy as np
 import cv2
-from google.colab.patches import cv2_imshow
-from google.colab import files
 
-model = tf.keras.models.load_model('/content/drive/My Drive/FinalExamEmergingTech2/cifar10_model.h5')
+def load_model():
+    model = tf.keras.models.load_model('cifar10_model.h5')
+    return model
+
+model = load_model()
 class_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 def predict(image):
@@ -68,39 +101,19 @@ def predict(image):
     confidence = np.max(prediction)
     return class_labels[class_prediction], confidence
 
-uploaded = files.upload()
+st.title("CIFAR-10 Detection System")
+uploaded_file = st.file_uploader("Choose an image")
 
-for filename in uploaded.keys():
-    image = cv2.imread(filename)
-    cv2_imshow(image)
-    # Make prediction
+if uploaded_file is not None:
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    image = cv2.imdecode(file_bytes, 1)
+    st.image(image, channels="BGR")
     class_name, confidence = predict(image)
-    print(f'Prediction: {class_name} (Confidence: {confidence:.2f})')
+    st.write(f"Prediction: {class_name} (Confidence: {confidence:.2f})")
+        ''')
 
-import os
-
-model_path = '/content/drive/My Drive/cifar10_model.h5'
-
-# Check if the file exists
-if os.path.exists(model_path):
-    print("Model file exists.")
-else:
-    print("Model file does not exist. Please check the path.")
-
-# List contents of the directory to verify the path
-print(os.listdir('/content/drive/My Drive/FinalExamEmergingTech2/'))
-
-import subprocess
-subprocess.check_call(['pip', 'install', 'streamlit'])
-
-
-# Commented out IPython magic to ensure Python compatibility.
-# %%writefile CIFAR10DetectionSystem.py
-
-import subprocess
-
-# Run the Streamlit app
-subprocess.Popen(['streamlit', 'run', 'CIFAR10DetectionSystem.py'])
-
-# Run the localtunnel command
-subprocess.Popen(['npx', 'localtunnel', '--port', '8501'])
+    # Run Streamlit app and localtunnel
+    subprocess.Popen(['streamlit', 'run', 'CIFAR10DetectionSystem.py'])
+    subprocess.Popen(['npx', 'localtunnel', '--port', '8501'])
+except Exception as e:
+    print(f"An error occurred: {e}")
