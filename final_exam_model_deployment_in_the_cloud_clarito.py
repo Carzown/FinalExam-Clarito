@@ -97,4 +97,10 @@ subprocess.check_call(['pip', 'install', 'streamlit'])
 # Commented out IPython magic to ensure Python compatibility.
 # %%writefile CIFAR10DetectionSystem.py
 
-! streamlit run CIFAR10DetectionSystem.py & npx localtunnel --port 8501
+import subprocess
+
+# Run the Streamlit app
+subprocess.Popen(['streamlit', 'run', 'CIFAR10DetectionSystem.py'])
+
+# Run the localtunnel command
+subprocess.Popen(['npx', 'localtunnel', '--port', '8501'])
