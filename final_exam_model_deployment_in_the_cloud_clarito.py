@@ -15,46 +15,17 @@ Date Submitted: 12/12/24 <br>
 
 <hr>
 """
-
+import streamlit as st
 import tensorflow as tf
 import numpy as np
 import cv2
-import os
-from tensorflow.keras import layers, models
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-# Load and preprocess CIFAR-10 dataset
-(x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
-x_train, x_test = x_train / 255.0, x_test / 255.0
+# Load model
+@st.cache_resource
+def load_model():
+    return tf.keras.models.load_model('cifar10_model.h5')
 
-# Define model
-model = models.Sequential([
-    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.Flatten(),
-    layers.Dense(64, activation='relu'),
-    layers.Dense(10)
-])
-
-# Compile model
-model.compile(optimizer=Adam(),
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
-
-# Train model
-model.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test))
-
-# Save model to local directory
-model_path = './cifar10_model.h5'
-model.save(model_path)
-print(f"Model saved at {model_path}")
-
-# Load the trained model
-model = tf.keras.models.load_model(model_path)
+model = load_model()
 class_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 # Prediction function
@@ -66,54 +37,16 @@ def predict(image):
     confidence = np.max(prediction)
     return class_labels[class_prediction], confidence
 
-# Verify model file exists
-if os.path.exists(model_path):
-    print("Model file exists.")
-else:
-    print("Model file does not exist. Please check the path.")
-
-# Streamlit and Localtunnel setup
-try:
-    import subprocess
-    # Ensure Streamlit is installed
-    subprocess.check_call(['pip', 'install', 'streamlit'])
-    
-    # Write Streamlit app to file
-    with open("CIFAR10DetectionSystem.py", "w") as f:
-        f.write('''
-import streamlit as st
-import tensorflow as tf
-import numpy as np
-import cv2
-
-def load_model():
-    model = tf.keras.models.load_model('cifar10_model.h5')
-    return model
-
-model = load_model()
-class_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-
-def predict(image):
-    image = cv2.resize(image, (32, 32))
-    input_arr = np.expand_dims(image, axis=0) / 255.0
-    prediction = model.predict(input_arr)
-    class_prediction = np.argmax(prediction)
-    confidence = np.max(prediction)
-    return class_labels[class_prediction], confidence
-
-st.title("CIFAR-10 Detection System")
-uploaded_file = st.file_uploader("Choose an image")
+# Streamlit interface
+st.title("CIFAR-10 Image Classification")
+uploaded_file = st.file_uploader("Upload an image")
 
 if uploaded_file is not None:
+    # Convert file to an OpenCV image
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     image = cv2.imdecode(file_bytes, 1)
     st.image(image, channels="BGR")
+    
+    # Predict class and confidence
     class_name, confidence = predict(image)
     st.write(f"Prediction: {class_name} (Confidence: {confidence:.2f})")
-        ''')
-
-    # Run Streamlit app and localtunnel
-    subprocess.Popen(['streamlit', 'run', 'CIFAR10DetectionSystem.py'])
-    subprocess.Popen(['npx', 'localtunnel', '--port', '8501'])
-except Exception as e:
-    print(f"An error occurred: {e}")
